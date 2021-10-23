@@ -1,0 +1,22 @@
+CREATE SEQUENCE codprodotti_seq
+    INCREMENT BY 1
+    START WITH 1
+    MAXVALUE 130000
+    MINVALUE 1 --il valore di start non può essere < di minvalue
+    CYCLE;
+   
+   
+CREATE SEQUENCE idclienti_seq
+    INCREMENT BY 1
+    START WITH 1
+    MAXVALUE 2000
+    MINVALUE 1
+    CYCLE;
+   
+   
+CREATE SEQUENCE codtessera_seq
+    INCREMENT BY 1
+    START WITH 1
+    MAXVALUE 2000
+    MINVALUE 1
+    CYCLE;

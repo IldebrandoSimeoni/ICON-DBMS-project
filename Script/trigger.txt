@@ -1,0 +1,433 @@
+create or replace trigger vincolo_vendita_cliente --1 Risoluzione vincolo sulla data di vendita non compresa tra data inizio tessera e data scadenza della tessera di un cliente
+before insert on VENDITE
+for each row
+declare
+    errore_vendita exception;
+    data_inizio    date;
+    data_scadenza  date;
+begin
+    if(:new.idcliente is not NULL) then
+        select Datainiziotessera into data_inizio   from Fidelizzazioni where cliente=:new.idcliente;
+        select Datascadenza 	 into data_scadenza from Fidelizzazioni where cliente=:new.idcliente;
+        if :new.DataVendita<data_inizio OR :new.DataVendita>data_scadenza
+           then
+            raise errore_vendita;
+        end if;
+    end if;
+exception
+    when errore_vendita then
+        raise_application_error(-20001,'Datavendita non compresa tra data inizio tessera e data scadenza');
+end;
+
+
+-------------------------------------------------
+create or replace trigger vincolo_Marchio_Marca --2 Risoluzione vincolo sul nome della marca non compresa tra i nomi dei marchi del fornitore
+before insert on Prodotti
+for each row
+declare 
+    errore_marchio exception;
+    numtemp        number(3);
+begin
+    select count(nome) into numtemp from Marchi where marchi.codfornitore=:new.codfornitore and :new.marca=nome;
+    if numtemp=0
+        then raise errore_marchio;
+    end if;
+exception
+    when errore_marchio then 
+        raise_application_error(-20002,'Marca non compresa tra i marchi del fornitore');
+end;
+
+--------------------------------------------------
+create or replace trigger vincolo_AmmSede_Mag  --3 Risoluzione vincolo sull' inserimento di un'amministratore sede il quale gestisce già un negozio
+before insert on Magazzini                                  
+for each row                                                 
+declare 
+    errore_ammsede exception;
+    numtemp        number(2);
+begin
+select count(Codamministratore) into numtemp from Negozi where Negozi.Codamministratore=:new.codamministratore;
+if  numtemp<>0
+    then raise errore_ammsede;
+end if;
+exception
+when errore_ammsede then raise_application_error(-20003,'Amministratore sede gestisce gia un negozio');
+end ;
+
+----------------------------------------------------
+create or replace trigger vincolo_AmmSede_Neg  --4 Risoluzione vincolo sull' inserimento di un'amministratore sede il quale gestisce già un magazzino;
+before insert on Negozi                                  
+for each row                                                 
+declare 
+    errore_ammsede exception;
+    numtemp        number(2);
+begin
+    select count(Codamministratore) into numtemp from Magazzini where Magazzini.Codamministratore=:new.codamministratore;
+    if  numtemp<>0
+        then raise errore_ammsede;
+    end if;
+exception
+    when errore_ammsede then 
+        raise_application_error(-20004,'Amministratore sede gestisce gia un magazzino');
+end ;
+
+------------------------------------------------------
+create or replace trigger vincolo_Negozio_Vendite --5 Risoluzione vincolo sulle vendite che contengono prodotto e commesso nello stesso negozio;
+before insert on Vendite                   
+for each row          
+declare
+    errore_vendita  exception;
+    cod_neg1        number(2);
+    cod_neg2        number(2);
+begin
+    select c.Negozio    into cod_neg1 from commessi c where c.Matricola=:new.MatCommesso; --Seleziona il negozio relativo al commesso che viene inserito
+    select p.CodNegozio into cod_neg2 from prodotti p where p.Codice=:new.CodProdotto;    --Seleziona il negozio relativo al prodotto che viene inserito
+    if cod_neg1<>cod_neg2
+        then raise errore_vendita;
+    end if;
+exception
+    when errore_vendita then
+        raise_application_error(-20005,'Prodotto e commesso devono trovarsi nello stesso negozio');
+end;
+
+----------------------------------------------------------------
+create or replace trigger vincolo_Prodotto_Vendite --6 --un prodotto per essere venduto dev'essere in negozio
+before insert on vendite
+for each row
+declare
+    errore_vendita_prod  exception;
+    numtemp              number(2);
+begin 
+    select count(CodNegozio) into numtemp from prodotti p where :new.Codprodotto=p.codice;
+    if numtemp=0
+        then raise errore_vendita_prod;
+    end if;
+exception
+    when errore_vendita_prod then 
+        raise_application_error(-20006,'Prodotto per essere venduto deve essere in negozio');
+end;
+
+-------------------------------------------------------------------------
+create or replace trigger vincolo_Negozio_Capienza   --7 Risoluzione vincolo sul negozio il quale non può avere capienza maggiore di 4000
+before insert on Prodotti
+for each row
+declare
+    errore_cap_neg  exception;
+    num_prod        number(4);
+begin
+    if(:new.CodNegozio is not NULL) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodNegozio=:new.codNegozio;
+        if num_prod>=4000
+            then raise errore_cap_neg ;
+        end if;
+    end if;
+exception
+    when errore_cap_neg then
+        raise_application_error(-20007,'Negozio non può avere capienza maggiore di 4000');
+end;
+
+-------------------------------------------------------------------
+create or replace trigger vincolo_Magazzino_Cap   --8  --Risoluzione vincolo sul magazzino il quale non può avere capienza maggiore della inserita
+before insert on Prodotti
+for each row
+declare
+    errore_cap_mag  exception;
+    num_prod        number(4);
+    capienza_mag    number(4);     
+begin
+    if(:new.CodMagazzino is not NULL) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodMagazzino=:new.CodMagazzino;
+        select Capienza into capienza_mag from Magazzini where :new.CodMagazzino=Magazzini.Codice;
+        if num_prod>=capienza_mag
+            then raise errore_cap_mag ;
+        end if;
+    end if;
+exception
+    when errore_cap_mag then
+        raise_application_error(-20008,'Magazzino non può avere capienza maggiore di quella inserita');
+end;
+----------------------------------------------------------------
+create or replace trigger vincolo_num_ammgen  --9  Risoluzione vincolo sul numero di Amministratori Generali  che non possono essere in numero maggiore di 8
+before insert on amministratorigenerali
+for each row
+declare
+    errore_num_max exception;
+    num_ammgen     number(2);
+begin
+select count(matricola) into num_ammgen from amministratorigenerali;
+    if num_ammgen>=8
+        then raise errore_num_max;
+    end if;
+exception
+    when errore_num_max then 
+        raise_application_error(-20009,'Gli Amministratori Generali non possono essere in numero maggiore di 8');
+end;
+
+ 
+
+-------------------------------------------------------------
+create or replace trigger vincolo_num_max_prodotti --10 --Risoluzione vincolo sui prodotti i quali non possono essere in numero magiore di 130000
+before insert on Prodotti
+for each row
+declare
+    errore_num_prod exception;
+    num_prod        number(6);
+begin
+    select count(codice) into num_prod from Prodotti;
+    if  num_prod>=130000
+        then raise errore_num_prod;
+    end if;
+exception
+    when errore_num_prod then 
+        raise_application_error(-20010,'Il numero dei prodotti non può essere superiore a 130000');
+end;
+
+------------------------------------------------------------------
+create or replace trigger vincolo_tel_unico --11 Risoluzione vincolo sulle sedi le quali non possono avere lo stesso numero di telefono --uguale per magazzini e uffici
+before insert on Negozi
+for each row
+declare
+    errore_tel exception;
+    tel_uff NUMBER(3);
+    tel_mag NUMBER(3);
+begin
+    select count(telefono) into tel_uff from uffici where uffici.telefono=:new.telefono;
+    select count(telefono) into tel_mag from magazzini where magazzini.telefono=:new.telefono;
+    if tel_uff<>0 OR tel_mag<>0
+        then raise errore_tel;
+    end if;
+exception
+    when errore_tel then 
+        raise_application_error(-20011,'Le sedi non possono avere lo stesso numero di telefono');
+end;
+
+--------------------------------------------------------------------
+create or replace trigger min_amm_gen  --12  --Risoluzione vincolo sugli Amministratori Generali, di cui deve essere presente almeno un amministratore generale
+before delete on amministratorigenerali
+for each row
+declare
+    errore_min_ammgen  exception;
+    num_ammgen         number(1);
+begin
+    select count(matricola) into num_ammgen from amministratorigenerali;
+    if num_ammgen=1
+        then raise errore_min_ammgen;
+    end if;
+exception
+    when errore_min_ammgen then 
+        raise_application_error(-20013,'Deve essere presente almeno un amministratore generale');
+    when no_data_found then
+        dbms_output.put_line('Non sono presenti amministratori generali' || sqlcode);
+        dbms_output.put_line(sqlerrm);
+end;
+------------------------------------------------------------------------
+create or replace trigger promozione_commesso	--13 --Promozione di un commesso rispetto alle vendite effettuate nel corso della sua carriera
+before insert on vendite
+for each row
+declare
+	num_vendite number(4);
+    	ruolo       commessi.ruolo%TYPE;
+	pro_senior  constant number:=4; --promozione 5 Senior 10 Major
+	pro_major   constant number:=9;
+begin
+	select ruolo into ruolo from commessi where matricola=:new.matcommesso;
+    select count(matcommesso) into num_vendite from vendite where matcommesso=:new.matcommesso;
+	if num_vendite>=pro_senior and num_vendite<pro_major and ruolo<>'Senior' and ruolo<>'Major' then
+		update commessi set ruolo='Senior' where matricola=:new.matcommesso;
+		dbms_output.put_line('Il commesso '|| :new.matcommesso || ' è stato promosso a Senior');
+	end if;
+	if num_vendite>=pro_major and ruolo<>'Major' then
+		update commessi set ruolo='Major' where matricola=:new.matcommesso;
+		dbms_output.put_line('Il commesso '|| :new.matcommesso || ' è stato promosso a Major');
+	end if;
+exception
+    when no_data_found then
+        raise_application_error(-20100,'La matricola non esiste o non ha ruolo quindi non può effettuare vendite');
+end;
+-------------------------------------------------------------------------------------
+-- versione dei trigger precedenti con update
+
+create or replace trigger vincolo_vendita_cliente_upd --1.1
+before update on VENDITE
+for each row
+declare
+    errore_vendita exception;
+    data_inizio    date;
+    data_scadenza  date;
+begin
+     if(:new.idcliente is not NULL) then
+        select Datainiziotessera into data_inizio from Fidelizzazioni where cliente=:new.idcliente;
+        select Datascadenza into data_scadenza from Fidelizzazioni where cliente=:new.idcliente;
+        if :new.DataVendita<data_inizio OR :new.DataVendita>data_scadenza
+           then
+            raise errore_vendita;
+        end if;
+    end if;
+exception
+    when errore_vendita then
+        raise_application_error(-20001,'Datavendita non compresa tra data inizio tessera e data scadenza');
+end;
+------------------------------------------------------------------------
+create or replace trigger vincolo_Marchio_Marca_upd --2.1
+before update on Prodotti
+for each row
+declare 
+    errore_marchio exception;
+    numtemp        number(3);
+begin
+    select count(nome) into numtemp from Marchi where marchi.codfornitore=:new.codfornitore and :new.marca=nome;
+    if numtemp=0
+        then raise errore_marchio;
+    end if;
+exception
+    when errore_marchio then 
+        raise_application_error(-20002,'Marca non compresa tra i marchi del fornitore');
+end;
+------------------------------------------------------------------------
+create or replace trigger vincolo_AmmSede_Mag_upd  --3.1
+before update on Magazzini                                  
+for each row                                                 
+declare 
+    errore_ammsede exception;
+    numtemp        number(2);
+begin
+    select count(Codamministratore) into numtemp from Negozi where Negozi.Codamministratore=:new.codamministratore;
+    if  numtemp<>0
+        then raise errore_ammsede;
+    end if;
+exception
+    when errore_ammsede then 
+        raise_application_error(-20003,'Amministratore sede gestisce gia un negozio');
+end ;
+------------------------------------------------------------------------
+create or replace trigger vincolo_AmmSede_Neg_upd  --4.1
+before update on Negozi                                  
+for each row                                                 
+declare 
+    errore_ammsede exception;
+    numtemp        number(2);
+begin
+    select count(Codamministratore) into numtemp from Magazzini where Magazzini.Codamministratore=:new.codamministratore;
+    if  numtemp<>0
+        then raise errore_ammsede;
+    end if;
+exception
+    when errore_ammsede then 
+        raise_application_error(-20004,'Amministratore sede gestisce gia un magazzino');
+end ;
+-------------------------------------------------------------------------
+create or replace trigger vincolo_Negozio_Vendite_upd --5.1
+before update on Vendite                   --vincolo prodotto e commesso nello stesso negozio
+for each row           
+declare 
+    errore_vendita  exception;
+    cod_neg1        number(2);
+    cod_neg2        number(2);
+begin
+    select c.Negozio    into cod_neg1 from commessi c where c.Matricola=:new.MatCommesso; --Seleziona il negozio relativo al commesso che viene inserito
+    select p.CodNegozio into cod_neg2 from prodotti p where p.Codice=:new.CodProdotto;    --Seleziona il negozio relativo al prodotto che viene inserito
+    if cod_neg1<>cod_neg2
+        then raise errore_vendita;
+    end if;
+exception
+    when errore_vendita then 
+        raise_application_error(-20005,'Prodotto e commesso devono trovarsi nello stesso negozio');
+    when no_data_found  then 
+        dbms_output.put_line('Il prodotto si trova in un magazzino');
+end;
+-------------------------------------------------------------------------
+create or replace trigger vincolo_Prodotto_Vendite_upd --6.1 --un prodotto per essere venduto dev'essere in negozio
+before update on vendite
+for each row
+declare
+    errore_vendita_prod  exception;
+    numtemp              number(2);
+begin 
+    select count(CodNegozio) into numtemp from prodotti p where :new.Codprodotto=p.codice;
+    if numtemp=0
+        then raise errore_vendita_prod;
+    end if;
+exception
+    when errore_vendita_prod then 
+        raise_application_error(-20006,'Prodotto per essere venduto deve essere in negozio');
+end;
+--------------------------------------------------------------------------------
+create or replace trigger vincolo_Negozio_Capienza_upd   --7.1 Risoluzione vincolo sul negozio il quale non può avere capienza maggiore di 4000
+before update on Prodotti
+for each row
+declare
+    errore_cap_neg  exception;
+    num_prod        number(4);
+begin
+    if(:new.CodNegozio is not NULL) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodNegozio=:new.codNegozio;
+        if num_prod>=4000
+            then raise errore_cap_neg ;
+        end if;
+    end if;
+exception
+    when errore_cap_neg then
+        raise_application_error(-20007,'Negozio non può avere capienza maggiore di 4000');
+end;
+
+-------------------------------------------------------------------
+create or replace trigger vincolo_Magazzino_Cap_upd   --8.1  --Risoluzione vincolo sul magazzino il quale non può avere capienza maggiore della inserita
+before update on Prodotti
+for each row
+declare
+    errore_cap_mag  exception;
+    num_prod        number(4);
+    capienza_mag    number(4);     
+begin
+    if(:new.CodMagazzino is not NULL) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodMagazzino=:new.CodMagazzino;
+        select Capienza into capienza_mag from Magazzini where :new.CodMagazzino=Magazzini.Codice;
+        if num_prod>=capienza_mag
+            then raise errore_cap_mag ;
+        end if;
+    end if;
+exception
+    when errore_cap_mag then
+        raise_application_error(-20008,'Magazzino non può avere capienza maggiore di quella inserita');
+end;
+----------------------------------------------------------------
+create or replace trigger vincolo_tel_unico_upd --11.1
+before update on Negozi
+for each row
+declare
+    errore_tel_upd exception;
+    tel_uff NUMBER(3);
+    tel_mag NUMBER(3);
+begin
+    select count(telefono) into tel_uff from uffici where uffici.telefono=:new.telefono;
+    select count(telefono) into tel_mag from magazzini where magazzini.telefono=:new.telefono;
+    if tel_uff<>0 OR tel_mag<>0
+        then raise errore_tel_upd;
+    end if;
+exception
+    when errore_tel_upd then 
+        raise_application_error(-20011,'Le sedi non possono avere lo stesso numero di telefono');
+end;
+-----------------------------------------------------------------
+create or replace trigger promozione_commesso	--13.1 --Promozione di un commesso rispetto alle vendite effettuate nel corso della sua carriera
+before update on vendite
+for each row
+declare
+	num_vendite number(4);
+    	ruolo       commessi.ruolo%TYPE;
+	pro_senior  constant number:=5;
+	pro_major   constant number:=10;
+begin
+	select ruolo into ruolo from commessi where matricola=:new.matcommesso;
+    select count(matcommesso) into num_vendite from vendite where matcommesso=:new.matcommesso;
+	if num_vendite>=pro_senior and num_vendite<pro_major and ruolo<>'Senior' and ruolo<>'Major' then
+		update commessi set ruolo='Senior' where matricola=:new.matcommesso;
+		dbms_output.put_line('Il commesso '|| :new.matcommesso || ' è stato promosso a Senior');
+	end if;
+	if num_vendite>=pro_major and ruolo<>'Major' then
+		update commessi set ruolo='Major' where matricola=:new.matcommesso;
+		dbms_output.put_line('Il commesso '|| :new.matcommesso || ' è stato promosso a Major');
+	end if;
+exception
+    when no_data_found then
+        raise_application_error(-20100,'La matricola non esiste o non ha ruolo quindi non può effettuare vendite');
+end;

@@ -1,0 +1,130 @@
+create or replace trigger vincolo_Prodotti_Quantita   --7,8,10 Risoluzione vincolo sul negozio il quale non può avere capienza maggiore di 4000
+before insert on Prodotti				--vincolo sul magazzino il quale non può avere capienza maggiore della inserita
+for each row                            --Risoluzione vincolo sui prodotti i quali non possono essere in numero maggiore di 130000;
+declare
+    errore_cap_neg  exception;
+    errore_cap_mag  exception;
+    errore_num_prod exception;
+    capienza_mag    number(4);
+    num_prod        number(6);     
+begin
+    if(:new.CodNegozio is not null) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodNegozio=:new.codNegozio;
+        if num_prod>=4000 then 
+            raise errore_cap_neg ;
+        end if;
+    end if;
+    if(:new.CodMagazzino is not null) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodMagazzino=:new.CodMagazzino;
+        select Capienza into capienza_mag from Magazzini where :new.CodMagazzino=Magazzini.Codice;
+        if num_prod>=capienza_mag then 
+            raise errore_cap_mag ;
+        end if;
+    end if;
+    select count(codice) into num_prod from Prodotti;
+    if num_prod>=130000 then
+         raise errore_num_prod;
+    end if;
+exception
+    when errore_cap_neg then
+        raise_application_error(-20007,'Negozio non può avere capienza maggiore di 4000');
+    when errore_cap_mag then
+        raise_application_error(-20008,'Magazzino non può avere capienza maggiore di quella inserita');
+    when errore_num_prod then 
+        raise_application_error(-20010,'Il numero dei prodotti non può essere superiore a 130000');
+end;
+
+
+
+---------------------------------------------------------------------------------------------------------------
+
+
+create or replace trigger vincolo_Negozio_Vendite --5,6   Risoluzione vincolo sulle vendite che contengono prodotto e commesso nello stesso negozio;
+before insert on Vendite                   		--un prodotto per essere venduto dev'essere in negozio
+for each row          
+declare
+    errore_vendita  	 exception;
+    errore_vendita_prod  exception;
+    cod_neg1             number(2);
+    cod_neg2             number(2);
+    numtemp              number(2);
+begin
+    select count(CodNegozio) into numtemp from prodotti p  where :new.Codprodotto=p.codice;
+    if numtemp=0 then 
+	raise errore_vendita_prod;
+    end if;
+    select c.Negozio    into cod_neg1 from commessi c  where c.Matricola=:new.MatCommesso; --Seleziona il negozio relativo al commesso che viene inserito
+    select p.CodNegozio into cod_neg2 from prodotti p  where p.Codice=:new.CodProdotto;    --Seleziona il negozio relativo al prodotto che viene inserito
+    if cod_neg1<>cod_neg2 then 
+	raise errore_vendita;
+    end if;
+exception
+    when errore_vendita then
+        raise_application_error(-20005,'Prodotto e commesso devono trovarsi nello stesso negozio');
+    when errore_vendita_prod then 
+        raise_application_error(-20006,'Prodotto per essere venduto deve essere in negozio');
+end;
+
+insert into vendite values(45,'09-Dic-1978',32,NULL);
+insert into vendite values(11,'09-Dic-1978',32,NULL);
+
+
+-----------------------------------------------------------------
+
+create or replace trigger vincolo_Prodotti_Quantita_upd   --7.1,8.1 Risoluzione vincolo sul negozio il quale non può avere capienza maggiore di 4000
+before update on Prodotti				--vincolo sul magazzino il quale non può avere capienza maggiore della inserita
+for each row                            		
+declare
+    errore_cap_neg  exception;
+    errore_cap_mag  exception;
+    capienza_mag    number(4);
+    num_prod        number(6);     
+begin
+    if(:new.CodNegozio is not NULL) then
+        select count(codice) into num_prod from Prodotti where Prodotti.CodNegozio=:new.codNegozio;
+        if num_prod>=4000 then 
+		raise errore_cap_neg ;
+        end if;
+    end if;
+    if(:new.CodMagazzino is not NULL) then
+        select count(codice) into num_prod     from Prodotti  where Prodotti.CodMagazzino=:new.CodMagazzino;
+        select Capienza      into capienza_mag from Magazzini where :new.CodMagazzino=Magazzini.Codice;
+        if num_prod>=capienza_mag then 
+		raise errore_cap_mag ;
+        end if;
+    end if;
+exception
+    when errore_cap_neg then
+        raise_application_error(-20007,'Negozio non può avere capienza maggiore di 4000');
+    when errore_cap_mag then
+        raise_application_error(-20008,'Magazzino non può avere capienza maggiore di quella inserita');
+end;
+
+----------------------------------------------------------------
+
+create or replace trigger vincolo_Negozio_Vendite_upd --5.1,6.1   Risoluzione vincolo sulle vendite che contengono prodotto e commesso nello stesso negozio;
+before update on Vendite                   		--un prodotto per essere venduto dev'essere in negozio
+for each row          
+declare
+    errore_vendita  	 exception;
+    errore_vendita_prod  exception;
+    cod_neg1             number(2);
+    cod_neg2             number(2);
+    numtemp              number(2);
+begin
+    select count(CodNegozio) into numtemp from prodotti p where :new.Codprodotto=p.codice;
+    if numtemp=0 then 
+	raise errore_vendita_prod;
+    end if;
+    select c.Negozio    into cod_neg1 from commessi c where c.Matricola=:new.MatCommesso; --Seleziona il negozio relativo al commesso che viene inserito
+    select p.CodNegozio into cod_neg2 from prodotti p where p.Codice=:new.CodProdotto;    --Seleziona il negozio relativo al prodotto che viene inserito
+    if cod_neg1<>cod_neg2 then 
+	raise errore_vendita;
+    end if;
+exception
+    when errore_vendita then
+        raise_application_error(-20005,'Prodotto e commesso devono trovarsi nello stesso negozio');
+    when errore_vendita_prod then 
+        raise_application_error(-20006,'Prodotto per essere venduto deve essere in negozio');
+end;
+

@@ -1,0 +1,12 @@
+drop table amministratorigenerali;
+drop table uffici;
+drop table marchi;
+drop table vendite;
+drop table commessi;
+drop table fidelizzazioni;
+drop table clienti;
+drop table prodotti;
+drop table negozi;
+drop table magazzini;
+drop table amministratorisede;
+drop table fornitori;

@@ -1,0 +1,6 @@
+INSERT INTO UFFICI VALUES (01,'DI ROGERS','Campania','Via Roma',10,'Napoli',0815678942);
+INSERT INTO UFFICI VALUES (05,'DI STARK','Campania','Via Petrarca',12,'Napoli',081231144);
+INSERT INTO UFFICI VALUES (02,'DI THOR','Sicilia','Via Gesuita',20,'Palermo',0913465789);
+INSERT INTO UFFICI VALUES (00,'DI BANNER','Sicilia','Via Del Dente',2,'Palermo',0915648682);
+INSERT INTO UFFICI VALUES (03,'DI FURY','Campania','Via Manzoni',5,'Napoli',0815678941);
+INSERT INTO UFFICI VALUES (04,'DEL DOTTOR STRANGE','Calabria','Via Pollenatrocchia',9,'Catanzaro',09615643543);

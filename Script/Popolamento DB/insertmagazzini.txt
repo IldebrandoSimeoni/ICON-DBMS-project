@@ -1,0 +1,6 @@
+INSERT INTO MAGAZZINI VALUES (04,'MagazzinoI','Campania','via delle rondini',321,'Giugliano',0812345674,4250,2);
+INSERT INTO MAGAZZINI VALUES (05,'MagazzinoU','Campania','via delle rondini',11,'Marano',0812345071,4000,6);
+INSERT INTO MAGAZZINI VALUES (06,'MagazzinoY','Sicilia','via giacomo leopardi',21,'Siracusa',0931255674,3000,7);
+INSERT INTO MAGAZZINI VALUES (01,'MagazzinoA','Campania','Piazza Garibaldi',10,'Napoli',081245532,3023,25);
+INSERT INTO MAGAZZINI VALUES (02,'MagazzinoE','Campania','Via Cisterna dell olio',14,'Napoli',081114488,4323,27);
+INSERT INTO MAGAZZINI VALUES (03,'MagazzinoO','Calabria','Via Cipolle',4,'Catanzaro',0961472843,2034,29);

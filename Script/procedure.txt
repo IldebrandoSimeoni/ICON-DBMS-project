@@ -1,0 +1,210 @@
+create or replace procedure Calcolo_SpesatotG_Cliente(   --calcolo spesa giornaliera di un cliente con sconto.op.16
+    inidCliente in clienti.id%TYPE,
+    inDataVendita in vendite.datavendita%TYPE
+)
+is
+    cursor cursore_v is SELECT CodProdotto from vendite where inidcliente=idcliente and datavendita=inDataVendita;
+    r_vendite    cursore_v%ROWTYPE;
+    pr_vendita   Prodotti.PrezzoVendita%TYPE;
+    spesatot     number(6,2);
+    sconto_c     fidelizzazioni.Offerta%TYPE;
+    errore_ing   exception;
+begin 
+    spesatot:=0;
+    open cursore_v;
+    loop
+        fetch cursore_v into r_vendite;
+        exit when cursore_v%NOTFOUND;
+        select p.prezzovendita into pr_vendita from vendite v join prodotti p on v.codprodotto=p.Codice where r_vendite.CodProdotto=p.Codice;
+        spesatot:=spesatot+pr_vendita;
+    end loop;
+    close cursore_v;
+    select Offerta into sconto_c from  Fidelizzazioni where inidCliente=Cliente;
+    spesatot:=spesatot-(spesatot*sconto_c/100);
+    dbms_output.put_line('La spesa del cliente con id ' || inidCliente || ' in data ' || indatavendita || ' è :' || spesatot);
+exception
+    when no_data_found then
+       raise_application_error(-20010,'Data o cliente non validi ');
+end;
+
+--************************************************************************************************************************************
+create or replace procedure Calcolo_Spesatot_Cliente(            --calcolo spesa cliente totale con scontoOp.17
+inidCliente in clienti.id%TYPE
+)
+is
+    cursor cursore_c is select CodProdotto from vendite where inidcliente=idcliente;
+    r_vendite  cursore_c%ROWTYPE;
+    spesatot   NUMBER(6,2);
+    pr_vendita Prodotti.PrezzoVendita%Type;
+    sconto_c   fidelizzazioni.Offerta%TYPE;
+begin
+    spesatot:=0;
+    open cursore_c;
+    loop
+        fetch cursore_c into r_vendite;
+        exit when cursore_c%NOTFOUND;
+        select p.prezzovendita into pr_vendita from vendite v join prodotti p on v.codprodotto=p.Codice where r_vendite.CodProdotto=p.Codice;
+        spesatot:=spesatot+pr_vendita;
+    end loop;
+    close cursore_c;
+    select Offerta into sconto_c from  Fidelizzazioni where inidCliente=Cliente;
+    spesatot:=spesatot-(spesatot*sconto_c/100);
+    dbms_output.put_line('La spesa del cliente ' || inidCliente || '  è :' || spesatot);
+exception    
+    when no_data_found then
+       raise_application_error(-20010,'Cliente non valido ');
+end;
+--*************************************************************************************************************************************
+create or replace procedure report_dipendenti
+is
+cursor cursore1 is select  a.matricola,a.cognome,a.nome,a.datadinascita,a.stipendio,a.ruolo,a.anniesperienza,n.nome as nomeneg
+                   from    commessi a join negozi n on a.negozio=n.codice;
+record cursore1%ROWTYPE;
+cursor cursore2 is select  a.matricola,a.cognome,a.nome,a.datadinascita,a.stipendio,a.anniesperienza,n.nome as nomeneg
+                   from    amministratorisede a join negozi n on a.matricola=n.codamministratore;
+record2 cursore2%ROWTYPE;
+cursor cursore3 is select  a.matricola,a.cognome,a.nome,a.datadinascita,a.stipendio,a.ruolo,u.nome as nomeuff
+                   from    amministratorigenerali a join uffici u on a.ufficio=u.codice;
+record3 cursore3%ROWTYPE;
+begin
+    open cursore1;
+    open cursore2;
+    open cursore3;
+    DBMS_OUTPUT.PUT_LINE('Report dipendenti');
+    loop
+        fetch cursore1 into record;
+        exit when cursore1%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(' Matricola ' || record.matricola ||
+                              ' di '       || record.cognome ||
+                               ' '         || record.nome ||
+                               ' nato il ' || record.datadinascita ||
+                         ' con stipendio ' || record.stipendio  ||
+                   ' con anni esperienza ' || record.anniesperienza  ||
+                            'e con ruolo ' || record.ruolo ||
+                ' e si trova nel negozio ' || record.nomeneg);
+        end loop;
+    loop
+        fetch cursore2 into record2;
+        exit when cursore2%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(' Matricola ' || record2.matricola ||
+                              ' di '       || record2.cognome ||
+                               ' '         || record2.nome ||
+                               ' nato il ' || record2.datadinascita ||
+                         ' con stipendio ' || record2.stipendio  ||
+                   ' con anni esperienza ' || record2.anniesperienza  ||
+                ' e si trova nel negozio ' || record2.nomeneg);
+    end loop;
+    loop
+        fetch cursore3 into record3;
+        exit when cursore3%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE(' Matricola ' || record3.matricola ||
+                              ' di '       || record3.cognome ||
+                               ' '         || record3.nome ||
+                               ' nato il ' || record3.datadinascita ||
+                         ' con stipendio ' || record3.stipendio  ||
+                             ' con ruolo ' || record3.ruolo  ||
+                ' e si trova nel ufficio ' || record3.nomeuff);
+    end loop;
+    close cursore1;
+    close cursore2;
+    close cursore3;
+end;
+--**********************************************************************************
+create or replace procedure report_prodotti
+is
+    cursor cursore IS
+            select * 
+            from prodotti
+        order by codice;
+    record cursore%rowtype;
+begin
+    open cursore;
+    DBMS_OUTPUT.PUT_LINE('Report prodotti');
+    loop
+    fetch cursore into record;
+    exit when cursore%notfound;
+        DBMS_OUTPUT.PUT_LINE(' Il prodotto con codice ' || record.codice ||
+        ' e nome ' || record.nome ||
+        ' con marca ' || record.marca ||
+        ' e materiale ' || record.materiale ||
+        ' e colore ' || record.colore || 
+        '  e prezzo di acquisto ' || record.prezzoacquisto || 
+        ' e prezzo di vendita ' ||record.prezzovendita ||
+        ' del tipo ' || record.tipo ||
+        ' di categoria accessorio ' || record.categoriaaccessorio ||
+        ' ha taglia ' || record.taglia ||
+        ' proviene dal codice fornitore ' || record.codfornitore || 
+        ' si trova in  ' || record.codnegozio ||
+        ' si trova in ' || record.codmagazzino);
+    end loop;
+    close cursore;
+end;
+--******************************************************************************************
+create or replace procedure report_sedi
+is
+cursor cursore1 is select * FROM negozi;
+record1 cursore1%ROWTYPE;
+cursor cursore2 is select * FROM magazzini;
+record2 cursore2%ROWTYPE;
+cursor cursore3 is select * FROM uffici;
+record3 cursore3%ROWTYPE;
+begin
+    open cursore1;
+    open cursore2;
+    open cursore3;
+    dbms_output.put_line('Report Sedi');
+    loop fetch cursore1 into record1;
+        exit when cursore1%NOTFOUND;
+        dbms_output.put_line('Il negozio con Codice '             || record1.codice||
+                            ' e Nome '                              || record1.nome ||
+                            ' che si trova in Regione '              || record1.Regione ||
+                            ' situato in Via '                   || record1.Via ||
+                            ' avente civico '                    || record1.Civico ||
+                            ' presso la città '                 || record1.Città||
+                            ' con telefono'                        || record1.Telefono||
+                            ' e fondocassa '                     || record1.FondoCassa||
+                            ' e codamministratore '              || record1.CodAmministratore);
+    end loop;
+    loop fetch cursore2 into record2;
+        exit when cursore2%NOTFOUND;
+        dbms_output.put_line('Il magazzino con Codice '             || record2.codice||
+                            ' e Nome '                               || record2.nome ||
+                            ' che si trova in Regione '              || record2.Regione ||
+                            ' situato in Via '                 || record2.Via ||
+                            ' avente civico '                     || record2.Civico ||
+                            ' presso la città '               || record2.Città||
+                            ' con telefono '                     || record2.Telefono||
+                            ' e capienza '                       || record2.Capienza||
+                            ' e codamministratore '            || record2.CodAmministratore);
+    end loop;
+    loop fetch cursore3 into record3;
+        exit when cursore3%NOTFOUND;
+        dbms_output.put_line('L ufficio con Codice '             || record3.codice||
+                            ' e Nome '                        || record3.nome ||
+                            ' che si trova in Regione '            || record3.Regione ||
+                            ' situato in Via '               || record3.Via ||
+                            ' avente civico '                || record3.Civico ||
+                            ' presso la città '               || record3.Città||
+                            ' con telefono '                  || record3.Telefono);
+    end loop;
+    close cursore1;
+    close cursore2;
+    close cursore3;
+end;
+--*******************************************************************************************
+create or replace procedure Calcolo_Somma_Stipendi
+is
+    stip_comm      NUMBER(8):=0;
+    stip_ammsede   NUMBER(8):=0;
+    stip_ammgen    NUMBER(8):=0;
+    stip_tot_mese  NUMBER(8):=0;
+    stip_tot_anno  NUMBER(9):=0;
+begin
+    select sum(stipendio) into stip_comm from commessi;
+    select sum(stipendio) into stip_ammsede from amministratorisede;
+    select sum(stipendio) into stip_ammgen from amministratorigenerali;
+    stip_tot_mese:=stip_comm+stip_ammsede+stip_ammgen;
+    stip_tot_anno:=stip_tot_mese*12;
+    dbms_output.put_line('In un mese l azienda ha speso : ' || stip_tot_mese);
+    dbms_output.put_line('In un anno l azienda ha speso : ' || stip_tot_anno);
+end;

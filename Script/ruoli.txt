@@ -1,0 +1,44 @@
+CREATE USER catena_dba IDENTIFIED BY icon2008; --creazione user dba
+grant dba;
+
+
+
+CREATE ROLE amministratore_generale;			--creazione ruolo amministratore_generale
+GRANT CONNECT TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.PRODOTTI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.MAGAZZINI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.NEGOZI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.FORNITORI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.MARCHI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.AMMINISTRATORISEDE TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.UFFICI TO amministratore_generale;
+GRANT  select ON catena_dba.AMMINISTRATORIGENERALI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.COMMESSI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.VENDITE TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.FIDELIZZAZIONI TO amministratore_generale;
+GRANT  update, insert, delete, select ON catena_dba.CLIENTI TO amministratore_generale;
+
+ 
+
+ 
+
+CREATE ROLE amministratore_sede;			--creazione ruolo amministratore sede
+GRANT CONNECT TO amministratore_sede;
+GRANT  update, insert, delete, select ON catena_dba.PRODOTTI TO amministratore_sede;
+GRANT  update, insert, delete,select ON catena_dba.MAGAZZINI TO amministratore_sede;
+GRANT  update, insert, delete, select ON catena_dba.NEGOZI TO amministratore_sede;
+GRANT  update, insert, delete, select ON catena_dba.COMMESSI TO amministratore_sede;
+GRANT  update, insert, delete, select ON catena_dba.CLIENTI TO amministratore_sede;
+GRANT  update, insert, delete, select ON catena_dba.FIDELIZZAZIONI TO amministratore_sede;
+GRANT  update, insert, delete, select ON catena_dba.VENDITE TO amministratore_sede;
+
+ 
+
+ 
+
+CREATE ROLE commesso;					--creazione ruolo commesso
+GRANT CONNECT TO commesso;
+GRANT  select ON catena_dba.PRODOTTI_VISTA TO commesso;
+GRANT  select, insert, delete, update ON catena_dba.VENDITE TO commesso;
+GRANT  select, insert, delete, update ON catena_dba.FIDELIZZAZIONI TO commesso;
+GRANT  select, insert, delete, update ON catena_dba.CLIENTI TO commesso;

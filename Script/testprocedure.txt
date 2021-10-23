@@ -1,0 +1,7 @@
+
+set serverout on;
+exec lib_catena.calcolo_spesatotG_cliente(12,'09-Dic-2020');
+exec lib_catena.report_sedi;
+exec lib_catena.report_dipendenti;
+exec lib_catena.report_prodotti;
+exec lib_catena.Calcolo_somma_stipendi;

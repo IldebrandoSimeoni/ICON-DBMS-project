@@ -1,0 +1,153 @@
+--Determinare l'articolo piu venduto della giornata.Op.1
+    select p.nome,p.marca,v.DataVendita,count(v.codprodotto) as Somma           
+    from vendite v join prodotti p on v.codprodotto=p.codice                   
+    group by p.nome,p.marca,v.DataVendita                                             
+    having count(v.codprodotto) >= ALL (
+         select count(v.codprodotto) as Somma                                       
+         from vendite v                   
+         group by v.datavendita 
+    );
+
+---------------------------------------------------------------------
+
+--Determinare quanti clienti fidelizzati nuovi si sono iscritti ogni mese.Op.2
+    select to_char(DataInizioTessera,'mm-yyyy') as Mese,count(CodiceTessera) as NumeroFid 
+    from fidelizzazioni
+    group by to_char(DataInizioTessera,'mm-yyyy')
+    order by to_char(DataInizioTessera,'mm-yyyy');
+
+---------------------------------------------------------------------
+
+--Rivelare il commesso con piu vendite all'attivo.Op.3
+    select c.matricola,c.nome,c.cognome,count(v.codprodotto) as NumVendite
+    from vendite v join commessi c on v.matcommesso=c.matricola
+    group by c.matricola,c.nome,c.cognome
+    having (count(v.codprodotto)) IN(
+    		select max(count(v.codprodotto))
+    		from vendite v
+   		group by v.matcommesso
+   		 );
+    --versione con vista
+    
+    create view TABELLATEMP(matricola,nome,cognome,NumProd) AS
+    select c.matricola,c.nome,c.cognome,count(v.codprodotto) as NumVendite
+    from vendite v join commessi c on v.matcommesso=c.matricola
+    group by c.matricola,c.nome,c.cognome;
+    
+    select matricola,nome,cognome,NumProd
+    from TABELLATEMP
+    where NumProd=(select max(NumProd) from TABELLATEMP);
+
+----------------------------------------------------------------------
+
+--Evidenziare quali prodotti vengono forniti da uno specifco fornitore.op.4
+
+select DISTINCT(f.nomefornitore),p.nome,p.marca
+from prodotti p join fornitori f on p.codfornitore=f.codice;
+
+------------------------------------------------------------------------
+
+--Determinare quali prodotti vengono esposti nel negozio.op.5
+
+select n.codice as NegozioCod,n.nome as NegozioNome,p.codice as ProdottoCod,p.nome as ProdottoNome,p.marca
+from prodotti p join negozi n on p.codnegozio=n.codice;
+
+-------------------------------------------------------------------------
+
+--Determinare quali commessi e amministratori sede lavorano in una determinato negozio.Op.6
+select c.nome,c.cognome,n.nome as NomeNegozio
+from negozi n join commessi c on c.negozio=n.codice
+UNION
+select a.nome,a.cognome,n.nome as NomeNegozio
+from negozi n join amministratorisede a on a.matricola=n.codamministratore
+order by NomeNegozio;
+
+------------------------------------------------------------------------
+
+--Stabilire cliente fidelizzato con piu/meno acquisti ed eventuale ordinamento.Op.7
+select c.id,c.nome,c.cognome,count(v.codprodotto) as Acquisti
+from vendite v join clienti c on v.idcliente=c.id 
+group by c.id,c.cognome,c.nome
+order by Acquisti DESC;
+
+--------------------------------------------------------------------------
+
+--Stabilire tasso di guadagno del singolo acquisto.Op.8
+select v.codprodotto,(p.prezzovendita/p.prezzoacquisto) AS TassoGuadng
+from vendite v join prodotti p on v.codprodotto=p.codice;
+
+--------------------------------------------------------------------------
+
+--Guadagno in una giornata.Op.9
+select v.DataVendita,SUM(p.prezzovendita-p.prezzoacquisto) as GuadagnoTotale
+from vendite v join prodotti p on v.codprodotto=p.codice
+group by DataVendita;
+
+--Guadagno in un mese.Op.9
+select to_char(v.datavendita, 'MM-YYYY') as Mese,SUM(p.prezzovendita-p.prezzoacquisto) as GuadagnoTotale  
+from vendite v join prodotti p on v.codprodotto=p.codice
+group by to_char(v.datavendita, 'MM-YYYY')
+order by to_char(v.datavendita, 'MM-YYYY');
+
+--Guadagno in un Anno.Op.9
+select to_char(v.datavendita, 'YYYY') as Anno,SUM(p.prezzovendita-p.prezzoacquisto) as GuadagnoTotale 
+from vendite v join prodotti p on v.codprodotto=p.codice
+group by to_char(v.datavendita, 'YYYY')
+order by to_char(v.datavendita, 'YYYY');
+
+--------------------------------------------------------------------------
+
+--Guadagno Totale.Op.10
+select SUM(p.prezzovendita-p.prezzoacquisto) as GuadagnoTotale
+from vendite v join prodotti p on v.codprodotto=p.codice;
+
+
+--------------------------------------------------------------------------
+
+--Determinare quanti magazzini e negozi ci sono.Op.11
+
+select sum(NumSede) as NumeroSedi from
+(   select count(m.codice) as NumSede
+    from magazzini m
+    UNION
+    select count(n.codice) as NumSede
+    from negozi n
+);
+
+-------------------------------------------------------------------------
+
+--Determinare quali prodotti diversi vengono esposti nel negozio.op.12
+select n.codice as NegozioCod,n.nome as NegozioNome,p.nome as ProdottoNome,p.marca
+from prodotti p join negozi n on p.codnegozio=n.codice
+group by p.nome,p.marca,n.codice,n.nome
+ORDER by n.nome;
+
+-------------------------------------------------------------------------
+
+--DETERMINARE QUALI MARCHI SONO ASSOCIATI AD UN FORNITORE op.13
+
+select nome as NomeMarchio,codfornitore 
+from marchi 
+order by codfornitore;
+
+-------------------------------------------------------------------------
+
+--determinare quanti commessi ci sono per negozio op.14
+
+select n.nome,count(c.matricola) as NUMcommessi
+from commessi c join negozi n on c.negozio=n.codice
+group by n.nome;
+
+-------------------------------------------------------------------------
+
+--Determinare i prodotti a quale sede appartengono.op.15
+-- con vista per smistamentomerci
+
+create view SMISTAMENTOMERCI(CODICEPROD,NOMEPROD,MARCA,NOMEMAG,NOMENEG)
+as
+select P.CODICE, P.NOME, P.MARCA, M.NOME, N.NOME
+from (PRODOTTI P full join MAGAZZINI M on P.CODMAGAZZINO=M.CODICE) 
+	full join NEGOZI N on P.CODNEGOZIO=N.CODICE order by P.MARCA,P.NOME;
+
+---------------------------------------------------------------------------
+

@@ -1,0 +1,250 @@
+﻿CREATE TABLE PRODOTTI(
+    Codice              NUMBER(8),
+    Nome                VARCHAR(20) NOT NULL,
+    Marca               VARCHAR(10) NOT NULL,
+    Materiale           VARCHAR(15) NOT NULL,
+    Colore              VARCHAR(10) NOT NULL,
+    PrezzoAcquisto      NUMBER(5,2) NOT NULL,
+    PrezzoVendita       NUMBER(5,2) NOT NULL,
+    Tipo                CHAR(1)     NOT NULL,
+    CategoriaAccessorio VARCHAR(15) DEFAULT NULL,
+    Taglia              VARCHAR(4),
+    CodFornitore        NUMBER(3)   NOT NULL,
+    CodNegozio          NUMBER(2),
+    CodMagazzino        NUMBER(2),
+    CONSTRAINT PK_PRODOTTI PRIMARY KEY(Codice),
+    --CONSTRAINT CK_TAGLIA CHECK (Taglia IN ('XS','S','M','L','XL','XXL','XXXL','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16')),
+    --CONSTRAINT CK_TIPO CHECK (Tipo IN ('A','B','a','b')),
+    CONSTRAINT CK_TAGLIA_TIPO CHECK ((Taglia IN ('XS','S','M','L','XL','XXL','XXXL') AND Tipo IN ('A','a')) OR ((Taglia IN ('1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16')) AND Tipo IN ('B','b'))),
+    CONSTRAINT CK_PREZZO CHECK(PrezzoVendita>PrezzoAcquisto),
+    CONSTRAINT CK_POSIZIONE CHECK (CodNegozio IS NULL AND CodMagazzino IS NOT NULL OR CodNegozio IS NOT NULL AND CodMagazzino IS NULL)
+);
+
+
+
+CREATE TABLE MAGAZZINI(
+    Codice            NUMBER(2),
+    Nome              VARCHAR(20) NOT NULL,
+    Regione           VARCHAR(15) NOT NULL,
+    Via               VARCHAR(30) NOT NULL,
+    Civico            NUMBER(3),
+    Città             VARCHAR(15) NOT NULL,
+    Telefono          NUMBER(15)  UNIQUE,
+    Capienza          SMALLINT    NOT NULL,
+    CodAmministratore NUMBER(2)   NOT NULL,
+    CONSTRAINT CK_MAG_AMMSED UNIQUE(CodAmministratore),
+    CONSTRAINT PK_MAGAZZINI PRIMARY KEY(CODICE),
+    CONSTRAINT CK_CAPIENZA CHECK (CAPIENZA<=5000),
+    CONSTRAINT CK_INDIRIZZOMAG UNIQUE(Regione,Via,Civico,Città)
+);
+
+
+
+CREATE TABLE NEGOZI (
+    Codice            NUMBER(2),
+    Nome              VARCHAR(20) NOT NULL,
+    Regione           VARCHAR(15) NOT NULL,
+    Via               VARCHAR(30) NOT NULL,
+    Civico            NUMBER(3),
+    Città             VARCHAR(15) NOT NULL,
+    Telefono          NUMBER(15)  UNIQUE,
+    FondoCassa        NUMBER(6,2) NOT NULL,
+    CodAmministratore NUMBER(2)   NOT NULL,
+    CONSTRAINT CK_NEG_AMMSED UNIQUE(CodAmministratore),
+    CONSTRAINT PK_NEGOZI PRIMARY KEY(Codice),
+    CONSTRAINT CK_INDIRIZZONEG UNIQUE(Regione,Via,Civico,Città)
+);
+
+
+
+CREATE TABLE FORNITORI(
+    Codice        NUMBER (3),
+    NomeFornitore VARCHAR(15) UNIQUE,
+    Catalogo      VARCHAR(15),
+    Nazione       VARCHAR(20),
+    CONSTRAINT PK_FORNITORI PRIMARY KEY(CODICE)
+);
+
+
+
+CREATE TABLE MARCHI (
+    Nome         VARCHAR(10),
+    CodFornitore NUMBER(3) NOT NULL,
+    CONSTRAINT PK_MARCHI PRIMARY KEY(Nome)
+);
+
+
+
+CREATE TABLE AMMINISTRATORISEDE (
+    Matricola      NUMBER(2),
+    CF             CHAR(16)   UNIQUE,
+    Nome           VARCHAR(15) NOT NULL,
+    Cognome        VARCHAR(15) NOT NULL,
+    DatadiNascita  DATE,
+    Stipendio      NUMBER(6)   NOT NULL,
+    AnniEsperienza NUMBER(2),
+    CONSTRAINT PK_AMMINISTRATORISEDE PRIMARY KEY(Matricola),
+    CONSTRAINT CK_STIPENDIOAMMS CHECK(Stipendio<=2000)
+);
+
+
+
+CREATE TABLE UFFICI(
+    Codice   NUMBER(2),
+    Nome     VARCHAR(20) NOT NULL,
+    Regione  VARCHAR(15) NOT NULL,
+    Via      VARCHAR(30) NOT NULL,
+    Civico   NUMBER(3),
+    Città    VARCHAR(15) NOT NULL,
+    Telefono NUMBER(15)  UNIQUE,
+    CONSTRAINT PK_UFFICI PRIMARY KEY(CODICE),
+    CONSTRAINT CK_INDIRIZZOUFFICIO UNIQUE(Regione,Via,Civico,Città)
+);
+
+
+
+CREATE TABLE AMMINISTRATORIGENERALI (
+    Matricola     NUMBER(2),
+    CF            CHAR(16)   UNIQUE,
+    Nome          VARCHAR(15) NOT NULL,
+    Cognome       VARCHAR(15) NOT NULL,
+    DatadiNascita DATE,
+    Stipendio     NUMBER(6)   NOT NULL,
+    Ruolo         VARCHAR(10) UNIQUE,
+    Ufficio       NUMBER(2),
+    CONSTRAINT CK_UFFICI_AMMGEN UNIQUE(Ufficio),
+    CONSTRAINT PK_AMMINISTRATORIGENERALI PRIMARY KEY(Matricola)
+);
+
+
+
+CREATE TABLE COMMESSI(
+    Matricola      NUMBER(3),
+    CF             CHAR(16)    UNIQUE,
+    Nome           VARCHAR(15) NOT NULL,
+    Cognome        VARCHAR(15) NOT NULL,
+    DatadiNascita  DATE,
+    Stipendio      NUMBER(6)   NOT NULL,
+    AnniEsperienza NUMBER(2),
+    Ruolo          VARCHAR(20),
+    Negozio        NUMBER(2)   NOT NULL,
+    CONSTRAINT CK_RUOLOCOMM CHECK(Ruolo IN ('Junior','Senior','Major')),
+    CONSTRAINT PK_COMMESSI PRIMARY KEY(MATRICOLA),
+    CONSTRAINT CK_STIPENDIOCOM CHECK(Stipendio<=1500)
+);
+
+
+
+
+
+CREATE TABLE VENDITE(
+    CodProdotto NUMBER(8) NOT NULL,
+    DataVendita DATE NOT NULL,
+    MatCommesso NUMBER(3) NOT NULL,
+    IdCliente   NUMBER(4),
+    CONSTRAINT PK_VENDITE PRIMARY KEY(CodProdotto)
+);
+
+
+
+CREATE TABLE FIDELIZZAZIONI (
+    CodiceTessera     NUMBER(4),
+    DataInizioTessera DATE       NOT NULL,
+    DataScadenza      DATE,
+    Offerta           NUMBER(2),
+    Negozio           NUMBER(2),
+    Cliente           NUMBER(4)  NOT NULL,
+    CONSTRAINT PK_FIDELIZZAZIONI PRIMARY KEY(CodiceTessera),
+    CONSTRAINT CK_DATATESSERA CHECK(Datainiziotessera<DataScadenza)
+);
+
+
+
+CREATE TABLE CLIENTI (
+    ID            NUMBER(4),
+    CF            CHAR(16)    UNIQUE,
+    Nome          VARCHAR(15) NOT NULL,
+    Cognome       VARCHAR(20) NOT NULL,
+    DatadiNascita DATE,
+    CONSTRAINT PK_CLIENTI PRIMARY KEY(ID)
+);
+
+
+
+
+
+ALTER TABLE PRODOTTI
+ADD CONSTRAINT FK_PRODOTTI_FORNITORI FOREIGN KEY(CodFornitore) 
+REFERENCES FORNITORI(Codice);	
+
+
+ 
+ALTER TABLE PRODOTTI
+ADD CONSTRAINT FK_PRODOTTI_NEGOZI FOREIGN KEY(CodNegozio) 
+REFERENCES NEGOZI(CODICE);
+
+
+ 
+ALTER TABLE PRODOTTI
+ADD CONSTRAINT FK_PRODOTTI_MAGAZZINI FOREIGN KEY(CodMagazzino) 
+REFERENCES MAGAZZINI(CODICE);
+ 
+
+
+ALTER TABLE MAGAZZINI
+ADD CONSTRAINT FK_MAGAZZINI_AMIMINISTRATORIS FOREIGN KEY(CodAmministratore) 
+REFERENCES AMMINISTRATORISEDE(Matricola);
+
+
+
+ALTER TABLE NEGOZI
+ADD CONSTRAINT FK_NEGOZI_AMIMINISTRATORIS FOREIGN KEY(CodAmministratore) 
+REFERENCES AMMINISTRATORISEDE(Matricola);
+
+
+
+ALTER TABLE MARCHI
+ADD CONSTRAINT FK_MARCHI_FORNITORI FOREIGN KEY(CodFornitore) 
+REFERENCES FORNITORI(Codice);
+
+
+
+ALTER TABLE AMMINISTRATORIGENERALI
+ADD CONSTRAINT FK_ADMINGEN_UFFICI FOREIGN KEY(Ufficio)  
+REFERENCES UFFICI(Codice) ON DELETE CASCADE;
+
+
+
+ALTER TABLE COMMESSI
+ADD CONSTRAINT FK_COMMESSI_NEGOZI FOREIGN KEY(Negozio) 
+REFERENCES NEGOZI(Codice);
+
+
+
+ALTER TABLE VENDITE
+ADD CONSTRAINT FK_VENDITE_COMMESSI FOREIGN KEY(MatCommesso) 
+REFERENCES COMMESSI(Matricola);
+
+
+
+ALTER TABLE VENDITE
+ADD CONSTRAINT FK_VENDITE_PRODOTTI FOREIGN KEY(CodProdotto) 
+REFERENCES PRODOTTI(Codice);
+
+
+
+ALTER TABLE VENDITE
+ADD CONSTRAINT FK_VENDITE_CLIENTI FOREIGN KEY(IdCliente)  
+REFERENCES CLIENTI(ID);
+
+
+ 
+ALTER TABLE FIDELIZZAZIONI
+ADD CONSTRAINT FK_FIDELIZZ_NEGOZI FOREIGN KEY(Negozio) 
+REFERENCES NEGOZI(Codice);
+
+
+
+ALTER TABLE FIDELIZZAZIONI
+ADD CONSTRAINT FK_FIDELIZZ_CLIENTI FOREIGN KEY(Cliente) 
+REFERENCES CLIENTI(ID) ON DELETE CASCADE;
